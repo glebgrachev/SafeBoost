@@ -7,7 +7,7 @@ enum VpnStatus { disconnected, connecting, connected, disconnecting, error, limi
 class VpnService extends ChangeNotifier {
   late final FlutterVless _vless;
 
-  int _trafficLimitBytes = 50 * 1024 * 1024;
+  int _trafficLimitBytes = 10 * 1024 * 1024 * 1024;
 
   VpnStatus _status = VpnStatus.disconnected;
   String _statusMessage = 'Отключено';
@@ -123,6 +123,8 @@ class VpnService extends ChangeNotifier {
     _statusMessage = 'Подключение...';
     _errorMessage = null;
     notifyListeners();
+
+    
     try {
       final hasPermission = await _vless.requestPermission();
       if (!hasPermission) { _setError('Разрешение VPN отклонено'); return; }
@@ -159,7 +161,7 @@ class VpnService extends ChangeNotifier {
     _statusMessage = 'Ошибка';
     _errorMessage = message;
     notifyListeners();
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 10), () {
       if (_status == VpnStatus.error) {
         _status = VpnStatus.disconnected;
         _statusMessage = 'Отключено';
