@@ -12,7 +12,7 @@
         provisioning_profiles:
           - SafeBoost AppStore
         certificates:
-          - SafeBoost Distribution
+          - SafeBoost AppStore
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
