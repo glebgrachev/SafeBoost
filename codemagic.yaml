@@ -9,11 +9,15 @@
       groups:
         - app_store
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.safeboost.app
+        provisioning_profiles:
+          - SafeBoost AppStore
+        certificates:
+          - SafeBoost Distribution
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
+      - name: Set up code signing
+        script: xcode-project use-profiles
       - name: Build iOS
         script: flutter build ipa --release
     artifacts:
