@@ -2,7 +2,6 @@
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 android {
     namespace = "com.safeboost.app"
@@ -15,6 +14,14 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
+    signingConfigs {
+        create("release") {
+            keyAlias = "safeboost"
+            keyPassword = "Amarillo-24"
+            storeFile = file("safeboost.jks")
+            storePassword = "Amarillo-24"
+        }
+    }
     defaultConfig {
         applicationId = "com.safeboost.app"
         minSdk = flutter.minSdkVersion
@@ -24,13 +31,10 @@ android {
     }
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
 flutter {
     source = "../.."
-}
-dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
 }
