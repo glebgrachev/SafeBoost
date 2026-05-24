@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "560347002699",
+    "project_id": "safeboost-ba26b",
+    "storage_bucket": "safeboost-ba26b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560347002699:android:5209c4ecd2a75c54d49ace",
+        "android_client_info": {
+          "package_name": "com.safeboost.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAel6i90SW4iLwUgFd3WqnLR9UvjwW9L9Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
