@@ -9,14 +9,13 @@
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.safeboost.app
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
       - name: Build iOS
-        script: flutter build ipa --release
+        script: |
+          flutter build ipa --release \
+            --dart-define=FLUTTER_BUILD_MODE=release
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
