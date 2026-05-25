@@ -1,34 +1,107 @@
 # SafeBoost — Памятка сборки и деплоя iOS
 
+## Хранилище ключей
+
+Все ключи хранятся на **Google Drive → Проекты → SafeBoost → Ключи**:
+
+| Файл | Описание | Где используется |
+|------|----------|-----------------|
+| `safeboost_distribution.p12` | Distribution сертификат с приватным ключом | Codemagic → Code signing identities |
+| `SafeBoost_AppStore.mobileprovision` | Provisioning Profile для App Store | Codemagic → Code signing identities |
+| `AuthKeyT2L3M93GBL.p8` | App Store Connect API ключ | Codemagic → Environment variables |
+
+**Пароль от `.p12`**: `dNf7GY2T` (хранить надёжно!)
+
+---
+
+## Аккаунты и идентификаторы
+
+| Параметр | Значение |
+|----------|----------|
+| Apple Developer Team ID | `JGB45NH7DY` |
+| Bundle ID | `com.safeboost.app` |
+| App Store Connect API Key ID | `T2L3M93GBL` |
+| App Store Connect API Key Name | `Codemagic` |
+| App Store Connect Issuer ID | `f40eff60-94e6-42b3-bcaf-5857b7a53f77` |
+| Provisioning Profile Name | `SafeBoost AppStore` |
+| Certificate Reference в Codemagic | `SafeBoost AppStore` |
+| Android Keystore | `android/app/safeboost.jks` |
+| Android Key Alias | `safeboost` |
+
+---
+
 ## Одноразовая настройка (делается один раз)
 
-### 1. Apple Developer
-- Создать App ID с capability **Network Extensions**
-- Создать Distribution сертификат через Codemagic (не через Apple напрямую!)
-- Создать Provisioning Profile типа **App Store** привязанный к сертификату Codemagic
+### 1. Apple Developer — developer.apple.com
 
-### 2. App Store Connect API ключ
-- appstoreconnect.apple.com → Users and Access → Integrations → App Store Connect API
-- Создать ключ с правами **App Manager**
-- Скачать `.p8` — только один раз!
+**App ID:**
+- Certificates, Identifiers & Profiles → Identifiers → +
+- Bundle ID: `com.safeboost.app`
+- Capabilities: включить **Network Extensions**
+
+**Distribution сертификат:**
+- НЕ создавать вручную в Apple Developer
+- Создавать через Codemagic → Code signing identities → Generate certificate
+- Тип: `Apple Distribution`, API key: `Codemagic`
+- **Сразу скачать `.p12` и сохранить пароль** — показывается только один раз
+- Сохранить как `safeboost_distribution.p12` на Google Drive
+
+**Provisioning Profile:**
+- Certificates, Identifiers & Profiles → Profiles → +
+- Тип: **App Store Connect** (Distribution)
+- App ID: `com.safeboost.app`
+- Certificate: выбрать сертификат созданный через Codemagic (дата до мая 2027)
+- Name: `SafeBoost AppStore`
+- Скачать и сохранить как `SafeBoost_AppStore.mobileprovision` на Google Drive
+
+### 2. App Store Connect API ключ — appstoreconnect.apple.com
+
+- Users and Access → Integrations → App Store Connect API → +
+- Name: `Codemagic`
+- Access: **App Manager**
+- Нажать Generate → скачать `.p8` файл — **только один раз!**
 - Записать **Issuer ID** и **Key ID**
+- Сохранить как `AuthKeyT2L3M93GBL.p8` на Google Drive
 
-### 3. Codemagic
-- Создать приложение через **codemagic.yaml** режим (не Flutter Workflow Editor!)
-- Team settings → Code signing identities → загрузить сертификат `.p12` с паролем
-- Загрузить Provisioning Profile `.mobileprovision`
-- Environment variables → группа `app_store`:
-  - `APP_STORE_CONNECT_ISSUER_ID`
-  - `APP_STORE_CONNECT_KEY_IDENTIFIER`
-  - `APP_STORE_CONNECT_PRIVATE_KEY` (содержимое `.p8`)
+### 3. Codemagic — codemagic.io
 
-### 4. Проект Flutter
-`ios/Runner.xcodeproj/project.pbxproj` — прописать:
-- `DEVELOPMENT_TEAM = JGB45NH7DY`
-- `CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Distribution"`
-- `TARGETED_DEVICE_FAMILY = "1"` (только iPhone)
+**Создание приложения:**
+- Add application → выбрать репозиторий SafeBoost
+- Тип: **codemagic.yaml** (НЕ Flutter Workflow Editor!)
 
-`ios/Runner/Info.plist` — добавить:
+**Загрузка сертификата:**
+- Team settings → Code signing identities → iOS certificates
+- Upload → загрузить `safeboost_distribution.p12`
+- Пароль: `dNf7GY2T`
+- Reference name: `SafeBoost AppStore`
+
+**Загрузка профиля:**
+- Team settings → Code signing identities → iOS provisioning profiles
+- Upload → загрузить `SafeBoost_AppStore.mobileprovision`
+- Reference name: `SafeBoost AppStore`
+
+**Environment variables:**
+- В приложении → Environment variables → создать группу `app_store`
+- Добавить три переменные (все отметить как Secret):
+
+| Переменная | Значение |
+|------------|----------|
+| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID из App Store Connect |
+| `APP_STORE_CONNECT_KEY_IDENTIFIER` | `T2L3M93GBL` |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | Содержимое `AuthKeyT2L3M93GBL.p8` целиком |
+
+### 4. Проект Flutter — настройки подписания
+
+**Редактировать только в VSCode (не через PowerShell!)**
+
+`ios/Runner.xcodeproj/project.pbxproj` — найти и установить:
+```
+DEVELOPMENT_TEAM = JGB45NH7DY;
+CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Distribution";
+TARGETED_DEVICE_FAMILY = "1";
+```
+
+`ios/Runner/Info.plist` — добавить перед `</dict>`:
 ```xml
 <key>UIDeviceFamily</key>
 <array>
@@ -41,12 +114,12 @@
 ## Сборка и деплой (каждый раз)
 
 **1. Увеличить build number в `pubspec.yaml`:**
-```
-version: 1.0.0+N  (N увеличивать на 1 каждый раз)
+```yaml
+version: 1.0.0+N  # N увеличивать на 1 каждый раз
 ```
 
-**2. Редактировать файлы только в VSCode** — не через PowerShell команды!  
-Иначе добавится BOM и сборка упадёт.
+**2. Редактировать файлы только в VSCode** — не через PowerShell!
+Иначе добавится BOM (`\xEF`) и сборка упадёт.
 
 **3. Закоммитить и запушить:**
 ```powershell
@@ -56,6 +129,8 @@ git push
 ```
 
 **4. Codemagic → Start new build → branch: main → workflow: ios-release**
+
+**5. После успешной сборки** — IPA автоматически загружается в App Store Connect → TestFlight
 
 ---
 
@@ -119,20 +194,30 @@ workflows:
 
 | Ошибка | Причина | Решение |
 |--------|---------|---------|
-| `Unable to decode the provided data` | Неверный пароль `.p12` или повреждён | Перегенерировать сертификат в Codemagic |
+| `Unable to decode the provided data` | Повреждён `.p12` или неверный пароль | Перегенерировать сертификат в Codemagic, сохранить новый `.p12` |
 | `Invalid character \xEF` | BOM в `project.pbxproj` | Редактировать только в VSCode |
 | `Bundle version must be higher` | Не увеличили build number | Увеличить `+N` в `pubspec.yaml` |
 | `No matching profiles found` | Используется Flutter Workflow Editor | Пересоздать приложение в yaml режиме |
-| `ClassNotFoundException MainActivity` | Неверный package в kotlin файле | Проверить `android/app/src/main/kotlin/` |
+| `ClassNotFoundException MainActivity` | Неверный package в kotlin файле | Проверить `android/app/src/main/kotlin/com/safeboost/app/MainActivity.kt` |
 | `Failed to set code signing for macos` | macOS проект мешает | Убрать `--project` флаг из `use-profiles` |
+| `fetch-signing-files` запускается автоматически | Flutter Workflow Editor перехватывает | Пересоздать приложение через codemagic.yaml режим |
 
 ---
 
-## Важные данные
+## Обновление сертификата (раз в год)
 
-- **Bundle ID**: com.safeboost.app
-- **Team ID**: JGB45NH7DY
-- **Provisioning Profile**: SafeBoost AppStore
-- **Certificate reference**: SafeBoost AppStore
-- **Keystore Android**: android/app/safeboost.jks, alias: safeboost
-- **Репозиторий**: https://github.com/glebgrachev/SafeBoost.git
+Сертификат истекает **24 мая 2027 года**. За месяц до истечения:
+
+1. Codemagic → Code signing identities → удалить старый сертификат
+2. Generate new certificate → скачать новый `.p12` → сохранить на Google Drive
+3. Apple Developer → Profiles → Edit `SafeBoost AppStore` → выбрать новый сертификат → Save → Download
+4. Codemagic → загрузить новый `.mobileprovision`
+5. Запустить новую сборку
+
+---
+
+## Репозиторий
+
+```
+https://github.com/glebgrachev/SafeBoost.git
+```
