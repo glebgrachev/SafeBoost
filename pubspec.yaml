@@ -1,4 +1,4 @@
-﻿name: vless_vpn
+﻿name: safeboost
 description: VLESS Reality VPN Client
 publish_to: 'none'
 version: 1.0.0+2
@@ -29,5 +29,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+
 
 
