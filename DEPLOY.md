@@ -2,15 +2,15 @@
 
 ## Хранилище ключей
 
-Все ключи хранятся на **Google Drive → Проекты → SafeBoost → Ключи**:
+Все ключи хранятся на **Google Drive → Проекты → SafeBoost → Ключи → Новые ключи для подписания 25.05.26**:
 
 | Файл | Описание | Где используется |
 |------|----------|-----------------|
-| `safeboost_distribution.p12` | Distribution сертификат с приватным ключом | Codemagic → Code signing identities |
-| `SafeBoost_AppStore.mobileprovision` | Provisioning Profile для App Store | Codemagic → Code signing identities |
+| `safeboost_distribution (1).p12` | Distribution сертификат с приватным ключом | Codemagic → Code signing identities |
+| `SafeBoost_AppStore (1).mobileprovision` | Provisioning Profile для App Store | Codemagic → Code signing identities |
 | `AuthKeyT2L3M93GBL.p8` | App Store Connect API ключ | Codemagic → Environment variables |
 
-**Пароль от `.p12`**: `dNf7GY2T` (хранить надёжно!)
+**Пароль от `.p12`**: `gIg13A7I` (хранить надёжно!)
 
 ---
 
@@ -44,7 +44,7 @@
 - Создавать через Codemagic → Code signing identities → Generate certificate
 - Тип: `Apple Distribution`, API key: `Codemagic`
 - **Сразу скачать `.p12` и сохранить пароль** — показывается только один раз
-- Сохранить как `safeboost_distribution.p12` на Google Drive
+- Сохранить как `safeboost_distribution (1).p12` на Google Drive
 
 **Provisioning Profile:**
 - Certificates, Identifiers & Profiles → Profiles → +
@@ -52,7 +52,7 @@
 - App ID: `com.safeboost.app`
 - Certificate: выбрать сертификат созданный через Codemagic (дата до мая 2027)
 - Name: `SafeBoost AppStore`
-- Скачать и сохранить как `SafeBoost_AppStore.mobileprovision` на Google Drive
+- Скачать и сохранить как `SafeBoost_AppStore (1).mobileprovision` на Google Drive
 
 ### 2. App Store Connect API ключ — appstoreconnect.apple.com
 
@@ -71,13 +71,13 @@
 
 **Загрузка сертификата:**
 - Team settings → Code signing identities → iOS certificates
-- Upload → загрузить `safeboost_distribution.p12`
-- Пароль: `dNf7GY2T`
+- Upload → загрузить `safeboost_distribution (1).p12`
+- Пароль: `gIg13A7I`
 - Reference name: `SafeBoost AppStore`
 
 **Загрузка профиля:**
 - Team settings → Code signing identities → iOS provisioning profiles
-- Upload → загрузить `SafeBoost_AppStore.mobileprovision`
+- Upload → загрузить `SafeBoost_AppStore (1).mobileprovision`
 - Reference name: `SafeBoost AppStore`
 
 **Environment variables:**
