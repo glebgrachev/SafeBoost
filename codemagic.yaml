@@ -15,7 +15,7 @@
       - name: Get Flutter packages
         script: flutter pub get
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: xcode-project use-profiles --verbose
       - name: Build iOS
         script: flutter build ipa --release
     artifacts:
@@ -26,3 +26,4 @@
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
+
