@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'vpn_service.dart';
 import 'home_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
