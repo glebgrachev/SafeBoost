@@ -311,7 +311,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                '${vpn.trafficUsed} / 50 MB',
+                '${vpn.trafficUsed} / ${vpn.trafficLimit}',
                 style: TextStyle(
                   color: color,
                   fontSize: 11,

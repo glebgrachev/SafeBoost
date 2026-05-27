@@ -71,6 +71,7 @@ class VpnService extends ChangeNotifier {
       await remoteConfig.setDefaults({'traffic_limit_mb': 10240});
       await remoteConfig.fetchAndActivate();
       final limitMb = remoteConfig.getInt('traffic_limit_mb');
+      debugPrint('[RC] traffic_limit_mb = $limitMb'); // добавить эту строку
       _trafficLimitBytes = limitMb * 1024 * 1024;
       notifyListeners();
     } catch (e) {
