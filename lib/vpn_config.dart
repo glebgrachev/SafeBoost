@@ -1,6 +1,6 @@
 class VpnConfig {
-  // VLESS URI передаётся напрямую — flutter_vless парсит его сам
-  static const String vlessUri =
+  // Дефолтный URI — используется только если Firestore недоступен
+  static const String defaultVlessUri =
       String.fromEnvironment(
         'VPN_URI',
         defaultValue:

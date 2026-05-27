@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/foundation.dart';
 import 'package:flutter_vless/flutter_vless.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'vpn_config.dart';
  
 enum VpnStatus { disconnected, connecting, connected, disconnecting, error, limitReached }
@@ -9,6 +10,7 @@ class VpnService extends ChangeNotifier {
   late final FlutterVless _vless;
  
   int _trafficLimitBytes = 10 * 1024 * 1024 * 1024;
+  String _activeVlessUri = VpnConfig.defaultVlessUri;
  
   VpnStatus _status = VpnStatus.disconnected;
   String _statusMessage = 'Отключено';
@@ -59,6 +61,7 @@ class VpnService extends ChangeNotifier {
       debugPrint('[VPN] initializeVless() ERROR: $e');
     }
     await _loadRemoteConfig();
+    await _loadFirestoreConfig();
   }
  
   Future<void> _loadRemoteConfig() async {
@@ -71,11 +74,44 @@ class VpnService extends ChangeNotifier {
       await remoteConfig.setDefaults({'traffic_limit_mb': 10240});
       await remoteConfig.fetchAndActivate();
       final limitMb = remoteConfig.getInt('traffic_limit_mb');
-      debugPrint('[RC] traffic_limit_mb = $limitMb'); // добавить эту строку
+      debugPrint('[RC] traffic_limit_mb = $limitMb');
       _trafficLimitBytes = limitMb * 1024 * 1024;
       notifyListeners();
     } catch (e) {
       debugPrint('[VPN] Remote Config ERROR: $e — используем дефолт 10GB');
+    }
+  }
+ 
+  Future<void> _loadFirestoreConfig() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('configs')
+          .where('is_active', isEqualTo: true)
+          .orderBy('priority')
+          .limit(1)
+          .get();
+ 
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        final uri = data['vless_uri'] as String?;
+        final limitMb = data['limit_mb'] as int?;
+ 
+        if (uri != null && uri.isNotEmpty) {
+          _activeVlessUri = uri;
+          debugPrint('[FS] vless_uri loaded from Firestore');
+        }
+ 
+        if (limitMb != null) {
+          _trafficLimitBytes = limitMb * 1024 * 1024;
+          debugPrint('[FS] limit_mb = $limitMb');
+        }
+ 
+        notifyListeners();
+      } else {
+        debugPrint('[FS] No active config found — using default');
+      }
+    } catch (e) {
+      debugPrint('[FS] Firestore ERROR: $e — используем дефолт');
     }
   }
  
@@ -146,7 +182,7 @@ class VpnService extends ChangeNotifier {
     try {
       final hasPermission = await _vless.requestPermission();
       if (!hasPermission) { _setError('Разрешение VPN отклонено'); return; }
-      final parser = FlutterVless.parseFromURL(VpnConfig.vlessUri);
+      final parser = FlutterVless.parseFromURL(_activeVlessUri);
       final config = parser.getFullConfiguration();
       await _vless.startVless(
         remark: 'SafeBoost',
