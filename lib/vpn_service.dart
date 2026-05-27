@@ -12,6 +12,7 @@ class VpnService extends ChangeNotifier {
   int _trafficLimitBytes = 10 * 1024 * 1024 * 1024;
   String _activeVlessUri = VpnConfig.defaultVlessUri;
   String? _activeConfigId;
+  bool _isUserCounted = false;
  
   VpnStatus _status = VpnStatus.disconnected;
   String _statusMessage = 'Отключено';
@@ -147,7 +148,10 @@ class VpnService extends ChangeNotifier {
   void _onStatusChanged(VlessStatus status) {
     switch (status.state) {
       case 'CONNECTED':
-        _incrementUsers();
+        if (!_isUserCounted) {
+          _incrementUsers();
+          _isUserCounted = true;
+        }
         _totalUpload += status.upload;
         _totalDownload += status.download;
         _upload = _formatBytes(status.uploadSpeed);
@@ -169,7 +173,10 @@ class VpnService extends ChangeNotifier {
         _statusMessage = 'Отключение...';
         break;
       case 'DISCONNECTED':
-        _decrementUsers();
+        if (_isUserCounted) {
+          _decrementUsers();
+          _isUserCounted = false;
+        }
         if (_status != VpnStatus.limitReached) {
           _status = VpnStatus.disconnected;
           _statusMessage = 'Отключено';
@@ -185,6 +192,10 @@ class VpnService extends ChangeNotifier {
   }
  
   Future<void> _reachLimit() async {
+    if (_isUserCounted) {
+      _decrementUsers();
+      _isUserCounted = false;
+    }
     _status = VpnStatus.limitReached;
     _statusMessage = 'Лимит исчерпан';
     _upload = '0 B/s';
@@ -254,5 +265,14 @@ class VpnService extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+ 
+  @override
+  void dispose() {
+    if (_isUserCounted) {
+      _decrementUsers();
+      _isUserCounted = false;
+    }
+    super.dispose();
   }
 }
