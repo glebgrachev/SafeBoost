@@ -148,6 +148,7 @@ class VpnService extends ChangeNotifier {
   void _onStatusChanged(VlessStatus status) {
     switch (status.state) {
       case 'CONNECTED':
+        debugPrint('[FS] isUserCounted = $_isUserCounted');
         if (!_isUserCounted) {
           _incrementUsers();
           _isUserCounted = true;
