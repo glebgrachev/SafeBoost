@@ -11,6 +11,7 @@ class VpnService extends ChangeNotifier {
  
   int _trafficLimitBytes = 10 * 1024 * 1024 * 1024;
   String _activeVlessUri = VpnConfig.defaultVlessUri;
+  String? _activeConfigId;
  
   VpnStatus _status = VpnStatus.disconnected;
   String _statusMessage = 'Отключено';
@@ -87,37 +88,66 @@ class VpnService extends ChangeNotifier {
       final snapshot = await FirebaseFirestore.instance
           .collection('configs')
           .where('is_active', isEqualTo: true)
+          .orderBy('current_users')
           .orderBy('priority')
           .limit(1)
           .get();
  
       if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.first.data();
+        final doc = snapshot.docs.first;
+        final data = doc.data();
+        _activeConfigId = doc.id;
+ 
         final uri = data['vless_uri'] as String?;
         final limitMb = data['limit_mb'] as int?;
  
         if (uri != null && uri.isNotEmpty) {
           _activeVlessUri = uri;
-          debugPrint('[FS] vless_uri loaded from Firestore');
+          debugPrint('[FS] vless_uri loaded, config: $_activeConfigId');
         }
- 
         if (limitMb != null) {
           _trafficLimitBytes = limitMb * 1024 * 1024;
           debugPrint('[FS] limit_mb = $limitMb');
         }
- 
         notifyListeners();
       } else {
-        debugPrint('[FS] No active config found — using default');
+        debugPrint('[FS] No active config — using default');
       }
     } catch (e) {
       debugPrint('[FS] Firestore ERROR: $e — используем дефолт');
     }
   }
  
+  Future<void> _incrementUsers() async {
+    if (_activeConfigId == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('configs')
+          .doc(_activeConfigId)
+          .update({'current_users': FieldValue.increment(1)});
+      debugPrint('[FS] current_users +1');
+    } catch (e) {
+      debugPrint('[FS] increment ERROR: $e');
+    }
+  }
+ 
+  Future<void> _decrementUsers() async {
+    if (_activeConfigId == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('configs')
+          .doc(_activeConfigId)
+          .update({'current_users': FieldValue.increment(-1)});
+      debugPrint('[FS] current_users -1');
+    } catch (e) {
+      debugPrint('[FS] decrement ERROR: $e');
+    }
+  }
+ 
   void _onStatusChanged(VlessStatus status) {
     switch (status.state) {
       case 'CONNECTED':
+        _incrementUsers();
         _totalUpload += status.upload;
         _totalDownload += status.download;
         _upload = _formatBytes(status.uploadSpeed);
@@ -139,6 +169,7 @@ class VpnService extends ChangeNotifier {
         _statusMessage = 'Отключение...';
         break;
       case 'DISCONNECTED':
+        _decrementUsers();
         if (_status != VpnStatus.limitReached) {
           _status = VpnStatus.disconnected;
           _statusMessage = 'Отключено';
