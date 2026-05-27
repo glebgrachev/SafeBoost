@@ -173,10 +173,6 @@ class VpnService extends ChangeNotifier {
         _statusMessage = 'Отключение...';
         break;
       case 'DISCONNECTED':
-        if (_isUserCounted) {
-          _decrementUsers();
-          _isUserCounted = false;
-        }
         if (_status != VpnStatus.limitReached) {
           _status = VpnStatus.disconnected;
           _statusMessage = 'Отключено';
@@ -193,7 +189,7 @@ class VpnService extends ChangeNotifier {
  
   Future<void> _reachLimit() async {
     if (_isUserCounted) {
-      _decrementUsers();
+      await _decrementUsers();
       _isUserCounted = false;
     }
     _status = VpnStatus.limitReached;
@@ -243,6 +239,10 @@ class VpnService extends ChangeNotifier {
     _status = VpnStatus.disconnecting;
     _statusMessage = 'Отключение...';
     notifyListeners();
+    if (_isUserCounted) {
+      await _decrementUsers();
+      _isUserCounted = false;
+    }
     try {
       await _vless.stopVless();
     } catch (e) {
