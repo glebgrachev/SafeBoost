@@ -2,6 +2,8 @@
 import 'package:flutter_vless/flutter_vless.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io';
 import 'vpn_config.dart';
  
 enum VpnStatus { disconnected, connecting, connected, disconnecting, error, limitReached }
@@ -51,6 +53,22 @@ class VpnService extends ChangeNotifier {
   VpnService() {
     _vless = FlutterVless(onStatusChanged: _onStatusChanged);
     _init();
+  }
+ 
+  Future<bool> _isRealDevice() async {
+    try {
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        return info.isPhysicalDevice;
+      } else if (Platform.isIOS) {
+        final info = await DeviceInfoPlugin().iosInfo;
+        return info.isPhysicalDevice;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('[VPN] isRealDevice check ERROR: $e');
+      return true;
+    }
   }
  
   Future<void> _init() async {
@@ -215,6 +233,14 @@ class VpnService extends ChangeNotifier {
  
   Future<void> connect() async {
     if (isLimitReached) return;
+ 
+    // Проверка эмулятора
+    final realDevice = await _isRealDevice();
+    if (!realDevice) {
+      _setError('VPN доступен только на реальном устройстве');
+      return;
+    }
+ 
     _status = VpnStatus.connecting;
     _statusMessage = 'Подключение...';
     _errorMessage = null;
